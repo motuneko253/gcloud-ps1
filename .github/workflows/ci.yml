@@ -1,0 +1,25 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ツールのインストール
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh shellcheck shfmt
+
+      - name: shellcheck
+        run: shellcheck -s bash gcloud-ps1.sh test/run.sh test/cases.sh
+
+      - name: shfmt
+        run: shfmt -d gcloud-ps1.sh test/run.sh test/cases.sh
+
+      - name: テスト (bash / zsh)
+        run: test/run.sh
