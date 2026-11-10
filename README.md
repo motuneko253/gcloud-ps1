@@ -21,10 +21,10 @@ user@host:~/work (☁|admin@example.com:my-project) $
 
 | シェル | 確認したバージョン |
 |---|---|
-| bash | 5.2 |
+| bash | 3.2 / 4.4 / 5.2 |
 | zsh | 5.9 |
 
-bash 3.2 / 4.x(macOS 標準の bash など)は実機では確認していません。使っている構文は 3.2 以降で動くはずです。
+bash 3.2 と 4.4 は Linux 上(Docker の公式イメージ)でテストを通しています。macOS の実機では確認していません。
 
 ## インストール
 
@@ -56,6 +56,8 @@ PROMPT='$(gcloud_ps1) '$PROMPT
 
 zsh では `PROMPT_SUBST` を自動で有効にします。
 
+`gcloud_ps1` は直前のコマンドの終了コードをそのまま返します。プロンプトの後ろのほうで `$?` を表示していても、値は変わりません。
+
 ## 表示される内容
 
 ```
@@ -85,7 +87,7 @@ zsh では `PROMPT_SUBST` を自動で有効にします。
 (☁|admin@example.com→deploy@my-project.iam.gserviceaccount.com:my-project)
 ```
 
-不要な場合は `GCLOUD_PS1_IMPERSONATE_ENABLE=false` で消せます。
+不要な場合は `GCLOUD_PS1_IMPERSONATE_ENABLE=false` で消せます。アカウントを非表示にしているときは、矢印を付けずにサービスアカウントだけを表示します。
 
 ## 設定
 
@@ -113,7 +115,7 @@ zsh では `PROMPT_SUBST` を自動で有効にします。
 | `GCLOUD_PS1_SEPARATOR` | `\|` | 記号と本体の間 |
 | `GCLOUD_PS1_DIVIDER` | `:` | 構成名・アカウント・プロジェクトの間 |
 | `GCLOUD_PS1_IMPERSONATE_ARROW` | `→` | アカウントと impersonate 先の間 |
-| `GCLOUD_PS1_ACCOUNT_MODE` | `full` | アカウントの表示形式。`full` は全体、`user` は `@` より前、`domain` は `@` より後 |
+| `GCLOUD_PS1_ACCOUNT_MODE` | `full` | アカウントの表示形式。`full` は全体、`user` は `@` より前、`domain` は `@` より後(該当部分が無ければ `N/A`) |
 | `GCLOUD_PS1_NA` | `N/A` | 値が無いときの表示 |
 
 ### 色
@@ -137,11 +139,13 @@ zsh では `PROMPT_SUBST` を自動で有効にします。
 
 | 変数 | 説明 |
 |---|---|
-| `GCLOUD_PS1_ACCOUNT_FUNCTION` | アカウントの表示を加工する関数名。引数は値、出力が表示になる |
+| `GCLOUD_PS1_ACCOUNT_FUNCTION` | アカウントの表示を加工する関数名。引数は表示する値、出力が表示になる |
 | `GCLOUD_PS1_PROJECT_FUNCTION` | プロジェクトの表示を加工する関数名 |
-| `GCLOUD_PS1_ACCOUNT_COLOR_FUNCTION` | アカウントの色を返す関数名。引数は値、出力が色になる |
+| `GCLOUD_PS1_ACCOUNT_COLOR_FUNCTION` | アカウントの色を返す関数名。引数は元の値、出力が色になる |
 | `GCLOUD_PS1_PROJECT_COLOR_FUNCTION` | プロジェクトの色を返す関数名 |
 
+- 加工する関数には、`GCLOUD_PS1_ACCOUNT_MODE` を適用した後の値が渡ります。値が無いときは `N/A`(`GCLOUD_PS1_NA` の値)が渡ります。
+- 色を返す関数には、加工する前の値が渡ります。値が無いときは空文字が渡ります。
 - 呼ばれるのは、現在のシェルで定義済みのシェル関数だけです。外部コマンドは実行しません。
 - 関数が未定義、または失敗したときは、元の値と既定の色を使います。
 - 関数を 1 つ指定するごとに、プロンプトの描画でサブシェルが 1 つ増えます。

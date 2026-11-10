@@ -11,6 +11,8 @@
 #   source /path/to/gcloud-ps1.sh
 #   PROMPT='$(gcloud_ps1) '$PROMPT
 #
+# gcloud_ps1 は直前のコマンドの終了コードをそのまま返すので、PS1 の後ろで $? を使える。
+#
 # gcloud コマンドは実行せず、構成ファイルを直接読む。*_FUNCTION / *_COLOR_FUNCTION を
 # 使わない限り関数の内部ではサブシェルを作らないので、プロンプト 1 回あたりの fork は
 # $(gcloud_ps1) の 1 回だけ (コールバックは 1 つにつき 1 回 fork する)。
@@ -45,10 +47,12 @@
 #   GCLOUD_PS1_SEPARATOR_COLOR    SEPARATOR (記号と本体の間) の色          (なし)
 #   GCLOUD_PS1_PREFIX_COLOR / SUFFIX_COLOR / BG_COLOR                       (なし)
 #   GCLOUD_PS1_HIDE_IF_NOCONFIG   アカウント・プロジェクト・impersonate のいずれも無ければ非表示 (false)
-#   GCLOUD_PS1_ACCOUNT_FUNCTION   アカウント表示を加工する関数 (引数: 値、出力: 表示)
+#   GCLOUD_PS1_ACCOUNT_FUNCTION   アカウント表示を加工する関数 (引数: 表示する値、出力: 表示)
 #   GCLOUD_PS1_PROJECT_FUNCTION   プロジェクト表示を加工する関数 (同上)
-#   GCLOUD_PS1_ACCOUNT_COLOR_FUNCTION  アカウントの色を返す関数 (引数: 値、出力: 色)
+#   GCLOUD_PS1_ACCOUNT_COLOR_FUNCTION  アカウントの色を返す関数 (引数: 元の値、出力: 色)
 #   GCLOUD_PS1_PROJECT_COLOR_FUNCTION  プロジェクトの色を返す関数 (同上)
+#   (加工関数には ACCOUNT_MODE 適用後の値が渡り、値が無いときは N/A の文言が渡る。
+#    色関数には加工前の値が渡り、値が無いときは空文字が渡る)
 #
 # *_FUNCTION は「現在のシェルで定義済みのシェル関数」だけが呼ばれる。実行コードを
 # 指定する設定なので、信頼できる関数だけを指定すること。失敗したときは元の値を使う。
@@ -391,7 +395,9 @@ gcloudoff() { _gcloud_ps1_toggle off "${1-}"; }
 # ---------------------------------------------------------------------------
 
 gcloud_ps1() {
-	_gcloud_ps1_is_enabled || return 0
+	# 直前のコマンドの終了コードを保つ (PS1 の後ろで $? を使えるようにする)
+	local rc=$?
+	_gcloud_ps1_is_enabled || return "$rc"
 	_gcloud_ps1_read_config
 
 	local account_raw="$_GCLOUD_PS1_ACCOUNT"
@@ -402,7 +408,7 @@ gcloud_ps1() {
 
 	if [[ "${GCLOUD_PS1_HIDE_IF_NOCONFIG:-false}" == "true" &&
 		-z "$account_raw" && -z "$project_raw" && -z "$imp_raw" ]]; then
-		return 0
+		return "$rc"
 	fi
 
 	local account project
@@ -415,11 +421,12 @@ gcloud_ps1() {
 			if [[ "$account_raw" == *@* ]]; then
 				account="${account_raw#*@}"
 			else
-				account="$na"
+				account=""
 			fi
 			;;
 		*) account="$account_raw" ;;
 		esac
+		account="${account:-$na}"
 	fi
 	project="${project_raw:-$na}"
 
@@ -457,10 +464,12 @@ gcloud_ps1() {
 	fi
 
 	if [[ -n "$imp_raw" && "${GCLOUD_PS1_IMPERSONATE_ENABLE:-true}" == "true" ]]; then
-		[[ "$body" == true && "${GCLOUD_PS1_ACCOUNT_ENABLE:-true}" != "true" ]] &&
-			_gcloud_ps1_paint "${GCLOUD_PS1_DIVIDER_COLOR-}" "${GCLOUD_PS1_DIVIDER-:}"
 		color="${GCLOUD_PS1_IMPERSONATE_COLOR-magenta}"
-		_gcloud_ps1_paint "$color" "${GCLOUD_PS1_IMPERSONATE_ARROW-→}"
+		if [[ "${GCLOUD_PS1_ACCOUNT_ENABLE:-true}" == "true" ]]; then
+			_gcloud_ps1_paint "$color" "${GCLOUD_PS1_IMPERSONATE_ARROW-→}"
+		elif [[ "$body" == true ]]; then
+			_gcloud_ps1_paint "${GCLOUD_PS1_DIVIDER_COLOR-}" "${GCLOUD_PS1_DIVIDER-:}"
+		fi
 		_gcloud_ps1_sanitize "$imp_raw"
 		_gcloud_ps1_paint "$color" "$_GCLOUD_PS1_R"
 		body=true
@@ -480,6 +489,7 @@ gcloud_ps1() {
 	[[ -n "$bg" ]] && _GCLOUD_PS1_OUT+="$_GCLOUD_PS1_BG_RESET"
 
 	printf '%s' "$_GCLOUD_PS1_OUT"
+	return "$rc"
 }
 
 _gcloud_ps1_init

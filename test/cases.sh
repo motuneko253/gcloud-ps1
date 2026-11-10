@@ -80,6 +80,19 @@ t "区切り・括弧の変更" "[me@example.com/proj-default]" 'GCLOUD_PS1_PREF
 t "impersonate 表示" "(me@example.com→sa@proj.iam.gserviceaccount.com:proj-default)" 'GCLOUD_PS1_IMPERSONATE_ENABLE=true gcloud_ps1'
 t "impersonate の矢印変更" "(me@example.com>sa@proj.iam.gserviceaccount.com:proj-default)" 'GCLOUD_PS1_IMPERSONATE_ENABLE=true GCLOUD_PS1_IMPERSONATE_ARROW=">" gcloud_ps1'
 
+t "アカウント非表示 + impersonate は矢印なし" "(sa@proj.iam.gserviceaccount.com:proj-default)" 'GCLOUD_PS1_IMPERSONATE_ENABLE=true GCLOUD_PS1_ACCOUNT_ENABLE=false gcloud_ps1'
+t "構成名 + impersonate (アカウント非表示)" "(default:sa@proj.iam.gserviceaccount.com:proj-default)" 'GCLOUD_PS1_IMPERSONATE_ENABLE=true GCLOUD_PS1_ACCOUNT_ENABLE=false GCLOUD_PS1_CONFIG_ENABLE=true gcloud_ps1'
+t "記号の後ろの空白" "(X |me@example.com:proj-default)" 'GCLOUD_PS1_SYMBOL_ENABLE=true GCLOUD_PS1_SYMBOL_CUSTOM=X GCLOUD_PS1_SYMBOL_PADDING=true gcloud_ps1'
+t "domain で @ の後ろが空なら N/A" "(N/A:proj-default)" 'CLOUDSDK_CORE_ACCOUNT=foo@ GCLOUD_PS1_ACCOUNT_MODE=domain gcloud_ps1'
+t "domain で @ が無ければ N/A" "(N/A:proj-default)" 'CLOUDSDK_CORE_ACCOUNT=foo GCLOUD_PS1_ACCOUNT_MODE=domain gcloud_ps1'
+t "user で @ の前が空なら N/A" "(N/A:proj-default)" 'CLOUDSDK_CORE_ACCOUNT=@foo GCLOUD_PS1_ACCOUNT_MODE=user gcloud_ps1'
+
+# 終了コード
+t "直前の終了コードを保つ" "(me@example.com:proj-default)[3]" '(exit 3); gcloud_ps1; echo "[$?]"'
+t "成功のときは 0" "(me@example.com:proj-default)[0]" 'true; gcloud_ps1; echo "[$?]"'
+t "非表示でも終了コードを保つ" "[3]" 'gcloudoff; (exit 3); gcloud_ps1; echo "[$?]"'
+t "HIDE_IF_NOCONFIG でも終了コードを保つ" "[3]" 'CLOUDSDK_CONFIG=/nonexistent; GCLOUD_PS1_HIDE_IF_NOCONFIG=true; (exit 3); gcloud_ps1; echo "[$?]"'
+
 # 構成の選択
 t "環境変数で構成を指定" "(dev@example.org:proj-dev)" 'CLOUDSDK_ACTIVE_CONFIG_NAME=dev gcloud_ps1'
 t "環境変数の構成名は大文字も可" "(N/A:upper-foo)" 'CLOUDSDK_ACTIVE_CONFIG_NAME=Foo gcloud_ps1'
@@ -133,6 +146,9 @@ t "gcloudoff -g はファイルで効く (環境変数を解除しても非表�
 t "gcloudoff -g で無効化ファイルができる" "yes" 'gcloudoff -g; [ -e "$XDG_CONFIG_HOME/gcloud-ps1/disabled" ] && echo yes'
 t "gcloudon -g で無効化ファイルが消える (環境変数を解除しても表示)" "(me@example.com:proj-default)" 'gcloudoff -g; gcloudon -g; unset GCLOUD_PS1_ENABLED; gcloud_ps1'
 t "gcloudon -g のあと無効化ファイルは無い" "no" 'gcloudoff -g; gcloudon -g; [ -e "$XDG_CONFIG_HOME/gcloud-ps1/disabled" ] && echo yes || echo no'
+t "gcloudon -h" "usage: gcloudon [-g|--global]" 'gcloudon -h'
+t "HOME などが未設定でも落ちない" "(N/A:N/A)" 'unset HOME CLOUDSDK_CONFIG XDG_CONFIG_HOME; gcloud_ps1'
+t "HOME などが未設定だと -g は失敗" "1" 'unset HOME CLOUDSDK_CONFIG XDG_CONFIG_HOME; gcloudoff -g >/dev/null 2>&1; echo $?'
 t "不明なオプションは失敗" "1" 'gcloudoff --nosuch >/dev/null 2>&1; echo $?'
 
 # 加工関数・色関数
@@ -142,15 +158,22 @@ t "加工関数" "(me@example.com:proj-default-X)" 'GCLOUD_PS1_PROJECT_FUNCTION=
 t "失敗した加工関数は元の値" "(me@example.com:proj-default)" 'GCLOUD_PS1_PROJECT_FUNCTION=fail_project gcloud_ps1'
 t "未定義の関数名は無視" "(me@example.com:proj-default)" 'GCLOUD_PS1_PROJECT_FUNCTION=nosuchfunc gcloud_ps1'
 t "-p は関数名として扱わない" "(me@example.com:proj-default)" 'GCLOUD_PS1_PROJECT_FUNCTION=-p gcloud_ps1'
+wrap_value() { printf '<%s>' "$1"; }
+t "アカウントの加工関数には整形後の値が渡る" "(<me>:proj-default)" 'GCLOUD_PS1_ACCOUNT_MODE=user GCLOUD_PS1_ACCOUNT_FUNCTION=wrap_value gcloud_ps1'
+t "値が無いとき加工関数には N/A が渡る" "(<N/A>:proj-default)" 'CLOUDSDK_CORE_ACCOUNT= GCLOUD_PS1_ACCOUNT_FUNCTION=wrap_value gcloud_ps1'
 
 # 色 (エスケープシーケンスまで含めて完全一致で比べる)
 # fg N: 前景色 N の開始シーケンス  rst: 前景色のリセット
 if [ -n "${ZSH_VERSION-}" ]; then
 	fg() { printf '%%F{%s}' "$1"; }
+	bg() { printf '%%K{%s}' "$1"; }
 	rst='%f'
+	bgrst='%k'
 else
 	fg() { printf '\001\033[38;5;%sm\002' "$1"; }
+	bg() { printf '\001\033[48;5;%sm\002' "$1"; }
 	rst=$'\001\033[39m\002'
+	bgrst=$'\001\033[49m\002'
 fi
 color_fn() { echo red; }
 t "色関数の戻り値が使われる" "(me@example.com:$(fg 1)proj-default${rst})" 'GCLOUD_PS1_PROJECT_COLOR_FUNCTION=color_fn gcloud_ps1'
@@ -162,6 +185,10 @@ t "範囲外の色は色なし" "(me@example.com:proj-default)" 'GCLOUD_PS1_PROJ
 t "DIVIDER_COLOR" "(me@example.com$(fg 3):${rst}proj-default)" 'GCLOUD_PS1_DIVIDER_COLOR=yellow gcloud_ps1'
 t "SEPARATOR_COLOR" "(X$(fg 2)|${rst}me@example.com:proj-default)" 'GCLOUD_PS1_SYMBOL_ENABLE=true GCLOUD_PS1_SYMBOL_CUSTOM=X GCLOUD_PS1_SEPARATOR_COLOR=green gcloud_ps1'
 t "PREFIX_COLOR / SUFFIX_COLOR" "$(fg 3)(${rst}me@example.com:proj-default$(fg 4))${rst}" 'GCLOUD_PS1_PREFIX_COLOR=yellow GCLOUD_PS1_SUFFIX_COLOR=blue gcloud_ps1'
+t "BG_COLOR" "$(bg 4)(me@example.com:proj-default)${bgrst}" 'GCLOUD_PS1_BG_COLOR=blue gcloud_ps1'
+raw_color() { case "$1" in me@example.com) echo green ;; '') echo blue ;; *) echo red ;; esac }
+t "アカウントの色関数には元の値が渡る" "($(fg 2)me${rst}:proj-default)" 'GCLOUD_PS1_ACCOUNT_MODE=user GCLOUD_PS1_ACCOUNT_COLOR_FUNCTION=raw_color gcloud_ps1'
+t "値が無いとき色関数には空文字が渡る" "($(fg 4)N/A${rst}:proj-default)" 'CLOUDSDK_CORE_ACCOUNT= GCLOUD_PS1_ACCOUNT_COLOR_FUNCTION=raw_color gcloud_ps1'
 
 # 値のサニタイズ
 t "制御文字を除去 (ESC SOH CR)" "(me@example.com:a[2Jb)" "CLOUDSDK_CORE_PROJECT=\$'a\\e[2J\\x01\\rb' gcloud_ps1"
