@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="130" viewBox="0 0 900 130" role="img" aria-label="gcloud-ps1 の表示例">
+  <rect width="900" height="130" rx="8" fill="#1e1e1e"/>
+  <circle cx="20" cy="18" r="6" fill="#ff5f56"/>
+  <circle cx="40" cy="18" r="6" fill="#ffbd2e"/>
+  <circle cx="60" cy="18" r="6" fill="#27c93f"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="15" fill="#d4d4d4">
+    <text x="20" y="58" xml:space="preserve">user@host:~/work (<tspan fill="#569cd6">☁</tspan>|<tspan fill="#f14c4c">admin@example.com</tspan>:<tspan fill="#29b8db">my-project</tspan>) $ gcloud config configurations activate prod</text>
+    <text x="20" y="84" xml:space="preserve">Activated [prod].</text>
+    <text x="20" y="110" xml:space="preserve">user@host:~/work (<tspan fill="#569cd6">☁</tspan>|<tspan fill="#f14c4c">admin@example.com</tspan>:<tspan fill="#29b8db">my-project-prod</tspan>) $ <tspan fill="#8a8a8a">▌</tspan></text>
+  </g>
+</svg>
