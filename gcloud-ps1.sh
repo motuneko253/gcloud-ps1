@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # gcloud-ps1: gcloud のアクティブな構成(アカウント / プロジェクト)をプロンプトに表示する
 #
+# https://github.com/motuneko253/gcloud-ps1
+# バージョン: 0.1.0 / ライセンス: MIT
+#
 # 表示例: (☁|user@example.com:my-project)
 #
 # 使い方 (bash):

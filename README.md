@@ -1,10 +1,11 @@
 # gcloud-ps1
 
+[![ci](https://github.com/motuneko253/gcloud-ps1/actions/workflows/ci.yml/badge.svg)](https://github.com/motuneko253/gcloud-ps1/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 今アクティブな gcloud の構成(アカウントとプロジェクト)を、bash / zsh のプロンプトに表示するスクリプトです。
 
-```
-user@host:~/work (☁|admin@example.com:my-project) $
-```
+![gcloud-ps1 の表示例](docs/demo.svg)
 
 本番プロジェクトで `gcloud` を叩く前に、今どのアカウント・プロジェクトを向いているかをひと目で確認できます。
 
@@ -263,6 +264,12 @@ GitHub Actions でも、`main` への push と pull request のたびに同じ�
 pre-commit install
 pre-commit run --all-files   # 全ファイルに対して手動で実行
 ```
+
+## 不具合の報告と要望
+
+不具合や要望は [Issues](https://github.com/motuneko253/gcloud-ps1/issues) にお願いします。不具合の場合は、シェルの種類とバージョン、設定している `GCLOUD_PS1_*` の値、期待した表示と実際の表示を書いてもらえると助かります。構成ファイルを貼るときは、アカウントやプロジェクト ID を伏せてください。
+
+Pull request も歓迎します。送る前に、上の「開発」のコマンドが通ることを確認してください。
 
 ## ライセンス
 
