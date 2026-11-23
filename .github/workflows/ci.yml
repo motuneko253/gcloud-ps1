@@ -32,6 +32,19 @@ jobs:
       - name: テスト (bash / zsh)
         run: test/run.sh
 
+  # 履歴全体に秘密情報 (トークンや鍵) が混ざっていないかを調べる
+  gitleaks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        run: >
+          docker run --rm -v "$PWD":/repo:ro ghcr.io/gitleaks/gitleaks:v8.30.1
+          git --log-opts="--all" --redact --no-banner /repo
+
   # 古い bash (macOS 標準の 3.2 など) でも動くことを、公式イメージで確かめる
   old-bash:
     runs-on: ubuntu-24.04

@@ -258,7 +258,7 @@ test/run.sh
 
 GitHub Actions でも、`main` への push と pull request のたびに同じ内容を実行します。あわせて、bash 3.2 と 4.4 でもテストを実行します。
 
-[pre-commit](https://pre-commit.com/) も設定してあります。コミット前に `shellcheck`、`shfmt`、テストなどを自動で実行します。
+[pre-commit](https://pre-commit.com/) も設定してあります。コミット前に `shellcheck`、`shfmt`、テスト、[gitleaks](https://github.com/gitleaks/gitleaks)(秘密情報の検出)などを自動で実行します。gitleaks は CI でも履歴全体に対して実行します。
 
 ```bash
 pre-commit install
