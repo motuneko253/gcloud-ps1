@@ -199,6 +199,7 @@ short=$(printf 'x%.0s' $(seq 1 255))
 t "256 文字を超えたら 255 文字 + … に切り詰め" "(me@example.com:${short}…)" "CLOUDSDK_CORE_PROJECT=$long gcloud_ps1"
 exact=$(printf 'x%.0s' $(seq 1 256))
 t "256 文字ちょうどは切り詰めない" "(me@example.com:${exact})" "CLOUDSDK_CORE_PROJECT=$exact gcloud_ps1"
+t "存在しないロケールでも警告を出さない" "(me@example.com:proj-default)" 'export LC_ALL=xx_YY.UTF-8 2>/dev/null; gcloud_ps1'
 if [ -n "${ZSH_VERSION-}" ]; then
 	t "zsh: % をエスケープ" "(me@example.com:a%%n)" "CLOUDSDK_CORE_PROJECT='a%n' gcloud_ps1"
 else

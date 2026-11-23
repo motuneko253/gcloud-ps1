@@ -163,6 +163,8 @@ _gcloud_ps1_paint() {
 
 # 長すぎる値を切り詰め、制御文字を除去し、zsh では % をエスケープする
 # (プロンプト注入対策)。$1: 値
+# LC_ALL に存在しないロケールが入っていると、bash は local の復元時に警告を出す。
+# プロンプトのたびに表示されないよう、呼び出し側で標準エラー出力を捨てること。
 _gcloud_ps1_sanitize() {
 	_GCLOUD_PS1_R="${1-}"
 	if ((${#_GCLOUD_PS1_R} > 256)); then
@@ -182,25 +184,13 @@ _gcloud_ps1_sanitize() {
 	return 0
 }
 
-# 指定した関数 (定義済みのシェル関数のみ) で値を加工する。失敗したら元の値。
-# $1: 関数名  $2: 値
-_gcloud_ps1_apply_fn() {
-	_GCLOUD_PS1_R="${2-}"
+# 定義済みのシェル関数を呼び、出力を結果にする。関数が未指定・未定義・失敗なら既定値。
+# $1: 関数名  $2: 関数に渡す値  $3: 既定値
+_gcloud_ps1_call_fn() {
+	_GCLOUD_PS1_R="${3-}"
 	if [[ -n "${1-}" ]] && typeset -f -- "$1" >/dev/null 2>&1; then
 		local out
 		if out="$("$1" "${2-}" 2>/dev/null)"; then
-			_GCLOUD_PS1_R="$out"
-		fi
-	fi
-	return 0
-}
-
-# 色を決める。$1: 既定の色  $2: 色を返す関数名  $3: 値
-_gcloud_ps1_resolve_color() {
-	_GCLOUD_PS1_R="${1-}"
-	if [[ -n "${2-}" ]] && typeset -f -- "$2" >/dev/null 2>&1; then
-		local out
-		if out="$("$2" "${3-}" 2>/dev/null)"; then
 			_GCLOUD_PS1_R="$out"
 		fi
 	fi
@@ -447,18 +437,18 @@ gcloud_ps1() {
 	fi
 
 	if [[ "${GCLOUD_PS1_CONFIG_ENABLE:-false}" == "true" ]]; then
-		_gcloud_ps1_sanitize "$config"
+		_gcloud_ps1_sanitize "$config" 2>/dev/null
 		_gcloud_ps1_paint "${GCLOUD_PS1_CONFIG_COLOR-yellow}" "$_GCLOUD_PS1_R"
 		body=true
 	fi
 
 	if [[ "${GCLOUD_PS1_ACCOUNT_ENABLE:-true}" == "true" ]]; then
 		[[ "$body" == true ]] && _gcloud_ps1_paint "${GCLOUD_PS1_DIVIDER_COLOR-}" "${GCLOUD_PS1_DIVIDER-:}"
-		_gcloud_ps1_resolve_color "${GCLOUD_PS1_ACCOUNT_COLOR-red}" \
-			"${GCLOUD_PS1_ACCOUNT_COLOR_FUNCTION-}" "$account_raw"
+		_gcloud_ps1_call_fn "${GCLOUD_PS1_ACCOUNT_COLOR_FUNCTION-}" "$account_raw" \
+			"${GCLOUD_PS1_ACCOUNT_COLOR-red}"
 		color="$_GCLOUD_PS1_R"
-		_gcloud_ps1_apply_fn "${GCLOUD_PS1_ACCOUNT_FUNCTION-}" "$account"
-		_gcloud_ps1_sanitize "$_GCLOUD_PS1_R"
+		_gcloud_ps1_call_fn "${GCLOUD_PS1_ACCOUNT_FUNCTION-}" "$account" "$account"
+		_gcloud_ps1_sanitize "$_GCLOUD_PS1_R" 2>/dev/null
 		_gcloud_ps1_paint "$color" "$_GCLOUD_PS1_R"
 		body=true
 	fi
@@ -470,18 +460,18 @@ gcloud_ps1() {
 		elif [[ "$body" == true ]]; then
 			_gcloud_ps1_paint "${GCLOUD_PS1_DIVIDER_COLOR-}" "${GCLOUD_PS1_DIVIDER-:}"
 		fi
-		_gcloud_ps1_sanitize "$imp_raw"
+		_gcloud_ps1_sanitize "$imp_raw" 2>/dev/null
 		_gcloud_ps1_paint "$color" "$_GCLOUD_PS1_R"
 		body=true
 	fi
 
 	if [[ "${GCLOUD_PS1_PROJECT_ENABLE:-true}" == "true" ]]; then
 		[[ "$body" == true ]] && _gcloud_ps1_paint "${GCLOUD_PS1_DIVIDER_COLOR-}" "${GCLOUD_PS1_DIVIDER-:}"
-		_gcloud_ps1_resolve_color "${GCLOUD_PS1_PROJECT_COLOR-cyan}" \
-			"${GCLOUD_PS1_PROJECT_COLOR_FUNCTION-}" "$project_raw"
+		_gcloud_ps1_call_fn "${GCLOUD_PS1_PROJECT_COLOR_FUNCTION-}" "$project_raw" \
+			"${GCLOUD_PS1_PROJECT_COLOR-cyan}"
 		color="$_GCLOUD_PS1_R"
-		_gcloud_ps1_apply_fn "${GCLOUD_PS1_PROJECT_FUNCTION-}" "$project"
-		_gcloud_ps1_sanitize "$_GCLOUD_PS1_R"
+		_gcloud_ps1_call_fn "${GCLOUD_PS1_PROJECT_FUNCTION-}" "$project" "$project"
+		_gcloud_ps1_sanitize "$_GCLOUD_PS1_R" 2>/dev/null
 		_gcloud_ps1_paint "$color" "$_GCLOUD_PS1_R"
 	fi
 

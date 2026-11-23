@@ -2,7 +2,15 @@ name: ci
 
 on:
   push:
+    branches: [main]
   pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -23,3 +31,16 @@ jobs:
 
       - name: テスト (bash / zsh)
         run: test/run.sh
+
+  # 古い bash (macOS 標準の 3.2 など) でも動くことを、公式イメージで確かめる
+  old-bash:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        bash: ["3.2", "4.4"]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: テスト (bash ${{ matrix.bash }})
+        run: docker run --rm -v "$PWD":/src:ro "bash:${{ matrix.bash }}" bash /src/test/run.sh

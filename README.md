@@ -24,7 +24,7 @@ user@host:~/work (☁|admin@example.com:my-project) $
 | bash | 3.2 / 4.4 / 5.2 |
 | zsh | 5.9 |
 
-bash 3.2 と 4.4 は Linux 上(Docker の公式イメージ)でテストを通しています。macOS の実機では確認していません。
+bash 3.2 と 4.4 は Linux 上(Docker の公式イメージ)でテストを通しています。CI でも毎回実行します。macOS の実機では確認していません。
 
 ## インストール
 
@@ -57,6 +57,16 @@ PROMPT='$(gcloud_ps1) '$PROMPT
 zsh では `PROMPT_SUBST` を自動で有効にします。
 
 `gcloud_ps1` は直前のコマンドの終了コードをそのまま返します。プロンプトの後ろのほうで `$?` を表示していても、値は変わりません。
+
+### 更新とアンインストール
+
+更新するときは、取得したディレクトリで `git pull` します。
+
+```bash
+git -C ~/gcloud-ps1 pull
+```
+
+やめるときは、設定ファイルに追記した行を消して、ディレクトリを削除します。`gcloudoff -g` を使ったことがある場合は、`~/.config/gcloud-ps1` も削除してください。
 
 ## 表示される内容
 
@@ -245,7 +255,7 @@ test/run.sh
 `test/run.sh` は bash と(入っていれば)zsh でテストを実行します。構成ファイルは一時ディレクトリに作るので、実際の gcloud の設定には触れません。
 使うシェルを指定したいときは、空白区切りで `GCLOUD_PS1_TEST_SHELLS="bash /path/to/zsh" test/run.sh` のように渡します。
 
-GitHub Actions でも、push と pull request のたびに同じ内容を実行します。
+GitHub Actions でも、`main` への push と pull request のたびに同じ内容を実行します。あわせて、bash 3.2 と 4.4 でもテストを実行します。
 
 [pre-commit](https://pre-commit.com/) も設定してあります。コミット前に `shellcheck`、`shfmt`、テストなどを自動で実行します。
 
